@@ -34,7 +34,7 @@ class VleFileOperations:
 
     def strip_psv(self):
         if self._sanity_check():
-            self._copy_file(self.gui.get_psv_directory(), self.gui.get_output_directory())
+            self._strip_file(self.gui.get_psv_directory(), self.gui.get_output_directory())
 
     def _sanity_check(self):
         self.psv_header_len = None
@@ -47,6 +47,9 @@ class VleFileOperations:
             return None
         if not self._check_if_path_is_file(self.gui.get_psv_directory()):
             self._add_message("Input file is not an existing file!")
+            return None
+        if not self.gui.get_output_directory():
+            self._add_message("Output path is empty!")
             return None
         return self._read_file_properties(self.gui.get_psv_directory())
 
@@ -105,7 +108,7 @@ class VleFileOperations:
                 return pos + 0x10
         return None
 
-    def _copy_file(self, input_file, output_file):
+    def _strip_file(self, input_file, output_file):
         self._add_message("Writing output file. Please wait...")
 
         with open(input_file, 'rb') as _input, open(output_file, 'wb') as _output:
