@@ -147,7 +147,6 @@ class VleFileOperations:
             pass_length -= chunk
 
     def _add_message(self, message, clear=False):
-        # TODO - Make status window read-only
         if clear:
             self.gui.status.clear()
         self.gui.status.insertPlainText(message + "\n")
