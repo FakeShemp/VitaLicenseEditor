@@ -27,8 +27,6 @@ class VleGui(QtWidgets.QMainWindow, Ui_MainWindow):
         file_ops = VleFileOperations(self, app)
         self.setupUi(self)
 
-        #self.status.setReadOnly(True)
-
         self.btn_psv_dir.clicked.connect(self.browse_psv_directory)
         self.btn_out_dir.clicked.connect(self.browse_output_directory)
         self.btn_exp_strip.clicked.connect(lambda: file_ops.strip_psv())
