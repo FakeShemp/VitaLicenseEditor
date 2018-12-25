@@ -13,6 +13,8 @@
 
 from os import path, stat
 import mmap
+import json
+import base64
 
 psv_offset = 512
 unk_pos = 0x1C00
@@ -29,6 +31,7 @@ class VleFileOperations:
         self.psv_header_len = None
         self.license_position = None
         self.file_size = None
+        self.license_file = {}
         self.gui = gui
         self.app = app
 
@@ -112,42 +115,49 @@ class VleFileOperations:
         self._add_message("Writing output file. Please wait...")
 
         with open(input_file, 'rb') as _input, open(output_file, 'wb') as _output:
-            _input.seek(self.psv_header_len)  # Ignore PSV header
-
+            #  _input.seek(self.psv_header_len)  # Ignore PSV header
+            self._copy_data(_input, _output, _len=self.psv_header_len, _license_field="Header")
             self._copy_data(_input, _output, _len=unk_pos)  # Read up to UNKNOWN
-            self._copy_data(_input, _output, _len=unk_len, zeroed=True)  # Zero out UNKNOWN
+            self._copy_data(_input, _output, _len=unk_len, _license_field="UNKNOWN")  # Zero out UNKNOWN
             self._copy_data(_input,
                             _output,
                             _len=self.license_position + lic1_offset - _input.tell())  # Read up to License1
             self._copy_data(_input,
                             _output,
-                            _len=lic1_len, zeroed=True)  # Zero out first license part
+                            _len=lic1_len, _license_field="License1")  # Zero out first license part
             self._copy_data(_input,
                             _output,
                             _len=lic2_offset)  # Read up to License2
             self._copy_data(_input,
                             _output,
-                            _len=lic2_len, zeroed=True)  # Zero out second license part
+                            _len=lic2_len, _license_field="License2")  # Zero out second license part
             self._copy_data(_input,
                             _output,
                             _len=self.file_size - _input.tell())  # Read to EOF
 
+        # json_data = json.dumps(self.license_file)
+        with open(path.splitext(output_file)[0] + ".json", 'w') as outfile:
+            json.dump(self.license_file, outfile)
+
         self._add_message("File written!")
 
-    @staticmethod
-    def _copy_data(_input, _output, _len, zeroed=False):
+    def _copy_data(self, _input, _output, _len, _license_field=None):
         pass_length = _len
         bufsize = 1024 * 1024 * 10
+        license_bitstream = b""
 
         while pass_length:
             chunk = min(bufsize, pass_length)
-            if zeroed:
-                _input.read(chunk)
+            if _license_field is not None:
+                license_bitstream += _input.read(chunk)
                 data = b"".rjust(chunk, b"\x00")
             else:
                 data = _input.read(chunk)
             _output.write(data)
             pass_length -= chunk
+
+        if _license_field is not None:
+            self.license_file[_license_field] = base64.encodebytes(license_bitstream).decode('utf-8')
 
     def _add_message(self, message, clear=False):
         if clear:
